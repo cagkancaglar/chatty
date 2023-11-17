@@ -20,7 +20,7 @@ export default function ChatPage() {
         <div className="flex flex-col bg-gray-700">
           <div className="flex-1">chat window</div>
           <footer className="bg-gray-800 p-10">
-            <form action="">
+            <form onSubmit={handleSubmit}>
               <fieldset className="flex gap-2">
                 <textarea
                   value={messageText}
