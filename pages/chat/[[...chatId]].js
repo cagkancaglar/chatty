@@ -1,13 +1,29 @@
 import { ChatSidebar } from "components/ChatSidebar";
+import { Message } from "components/Message";
 import Head from "next/head";
 import React, { useState } from "react";
+import { v4 as uuid } from "uuid";
 
 export default function ChatPage() {
   const [incomingMessage, setIncomingMessage] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [newChatMessages, setNewChatMessages] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setNewChatMessages((prev) => {
+      const newChatMessages = [
+        ...prev,
+        {
+          _id: uuid(),
+          role: "user",
+          content: messageText,
+        },
+      ];
+      return newChatMessages;
+    });
+
     const response = await fetch("/api/chat/sendMessage", {
       method: "POST",
       headers: {
@@ -19,9 +35,7 @@ export default function ChatPage() {
     });
 
     const data = response.body;
-    if (!data) {
-      return;
-    }
+    if (!data) return;
 
     const reader = data.getReader();
     await streamReader(reader, (message) => {
@@ -37,7 +51,14 @@ export default function ChatPage() {
       <div className="grid h-screen grid-cols-[260px_1fr]">
         <ChatSidebar />
         <div className="flex flex-col bg-gray-700">
-          <div className="flex-1 text-white">{incomingMessage}</div>
+          <div className="flex-1 text-white">
+            {newChatMessages.map((message, i) => (
+              <Message key={i} role={message.role} content={message.content} />
+            ))}
+            {!!incomingMessage && (
+              <Message role="assistant" content={incomingMessage} />
+            )}
+          </div>
           <footer className="bg-gray-800 p-10">
             <form onSubmit={handleSubmit}>
               <fieldset className="flex gap-2">
