@@ -1,6 +1,15 @@
+import {
+  faMessage,
+  faPlus,
+  faRightFromBracket,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export const ChatSidebar = () => {
+  const [chatList, setChatList] = useState([]);
+
   useEffect(() => {
     loadChatList();
   }, []);
@@ -11,11 +20,27 @@ export const ChatSidebar = () => {
     });
     const json = await response.json();
     console.log("Chat list: ", json);
+    setChatList(json?.chats || []);
   };
 
   return (
-    <div className="bg-gray-900 text-white">
-      <Link href="/api/auth/logout">Logout</Link>
+    <div className="flex flex-col overflow-hidden bg-gray-900 text-white">
+      <Link
+        href="/chat"
+        className="side-menu-item bg-emerald-500 hover:bg-emerald-600"
+      >
+        <FontAwesomeIcon icon={faPlus} /> New Chat
+      </Link>
+      <div className="flex-1 overflow-auto bg-gray-950">
+        {chatList.map((chat, i) => (
+          <Link key={i} href={`/chat/${chat._id}`} className="side-menu-item">
+            <FontAwesomeIcon icon={faMessage} /> {chat.title}
+          </Link>
+        ))}
+      </div>
+      <Link href="/api/auth/logout" className="side-menu-item">
+        <FontAwesomeIcon icon={faRightFromBracket} /> Logout
+      </Link>
     </div>
   );
 };
