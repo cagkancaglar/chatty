@@ -1,14 +1,24 @@
 import { ChatSidebar } from "components/ChatSidebar";
 import { Message } from "components/Message";
 import Head from "next/head";
-import React, { useState } from "react";
+import { useRouter } from "next/router";
+import React, { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 
 export default function ChatPage() {
+  const [newChatId, setNewChatId] = useState(null);
   const [incomingMessage, setIncomingMessage] = useState("");
   const [messageText, setMessageText] = useState("");
   const [newChatMessages, setNewChatMessages] = useState([]);
   const [generatingResponse, setGeneratingResponse] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!generatingResponse && newChatId) {
+      setNewChatId(null);
+      router.push(`/chat/${newChatId}`);
+    }
+  }, [newChatId, generatingResponse, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +37,7 @@ export default function ChatPage() {
     });
 
     setMessageText("");
-  
+
     const response = await fetch("/api/chat/sendMessage", {
       method: "POST",
       headers: {
@@ -43,7 +53,11 @@ export default function ChatPage() {
 
     const reader = data.getReader();
     await streamReader(reader, (message) => {
-      setIncomingMessage((s) => `${s}${message.content}`);
+      if (message.event === "newChatId") {
+        setNewChatId(message.content);
+      } else {
+        setIncomingMessage((s) => `${s}${message.content}`);
+      }
     });
 
     setGeneratingResponse(false);
