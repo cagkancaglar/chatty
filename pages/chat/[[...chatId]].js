@@ -1,17 +1,25 @@
+import { getSession } from "@auth0/nextjs-auth0";
 import { ChatSidebar } from "components/ChatSidebar";
 import { Message } from "components/Message";
+import clientPromise from "lib/mongodb";
+import { ObjectId } from "mongodb";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 
-export default function ChatPage({ chatId }) {
+export default function ChatPage({ chatId, title, messages = [] }) {
   const [newChatId, setNewChatId] = useState(null);
   const [incomingMessage, setIncomingMessage] = useState("");
   const [messageText, setMessageText] = useState("");
   const [newChatMessages, setNewChatMessages] = useState([]);
   const [generatingResponse, setGeneratingResponse] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setNewChatMessages([]);
+    setNewChatId(null);
+  }, [chatId]);
 
   useEffect(() => {
     if (!generatingResponse && newChatId) {
@@ -60,8 +68,11 @@ export default function ChatPage({ chatId }) {
       }
     });
 
+    setIncomingMessage("");
     setGeneratingResponse(false);
   };
+
+  const allMessages = [...messages, ...newChatMessages];
 
   return (
     <>
@@ -102,9 +113,27 @@ export default function ChatPage({ chatId }) {
 
 export const getServerSideProps = async (ctx) => {
   const chatId = ctx.params?.chatId?.[0] || null;
+  if (chatId) {
+    const { user } = await getSession(ctx.req, ctx.res);
+    const client = await clientPromise;
+    const db = await client.db("Chatty");
+    const chat = await db.collection("chats").findOne({
+      userId: user.sub,
+      _id: new ObjectId(chatId),
+    });
+    return {
+      props: {
+        chatId,
+        title: chat.title,
+        messages: chat.messages.map((message) => ({
+          ...message,
+          _id: uuid(),
+        })),
+      },
+    };
+  }
+
   return {
-    props: {
-      chatId,
-    },
+    props: {},
   };
 };
