@@ -168,13 +168,34 @@ export default function ChatPage({ chatId, title, messages = [] }) {
 export const getServerSideProps = async (ctx) => {
   const chatId = ctx.params?.chatId?.[0] || null;
   if (chatId) {
+    let objectId;
+
+    try {
+      objectId = new ObjectId(chatId);
+    } catch (error) {
+      return {
+        redirect: {
+          destination: "/chat",
+        },
+      };
+    }
+
     const { user } = await getSession(ctx.req, ctx.res);
     const client = await clientPromise;
     const db = await client.db("Chatty");
     const chat = await db.collection("chats").findOne({
       userId: user.sub,
-      _id: new ObjectId(chatId),
+      _id: objectId,
     });
+
+    if (!chat) {
+      return {
+        redirect: {
+          destination: "/chat",
+        },
+      };
+    }
+
     return {
       props: {
         chatId,
